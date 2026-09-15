@@ -11,14 +11,11 @@ services:
       - key: ASSEMBLYAI_API_KEY
         sync: false
       # Which agents/<name>.jsonc the service publishes on boot.
-      # Updated to use the clinical intake scribe with session-history dashboard
       - key: AGENT
-        value: ai-voice-intake-scribe
-      # Paste an id from your .env here to serve that exact agent. Left empty,
-      # the service publishes AGENT itself and reuses the agent of the same
-      # name on later restarts. For production, set to agent_b0aca15004de4ab2b39bbfc1ce360956
+        value: riverbend-agent
+      # Serve this exact stored agent (Riverbend pre-visit intake).
       - key: AGENT_ID
-        value: ''
+        value: agent_bb11db37a70b4df0b3ab459560249842
       # Optional: pin API base if your account is regional
       # - key: AGENTS_API_BASE
       #   value: https://agents.assemblyai.com/v1

@@ -41,9 +41,14 @@
       "name": "flag_urgent",
       "description": "Immediately alert clinic staff when the caller reports a possible emergency. Call this as soon as a warning sign is reported, before giving the caller the emergency instruction.",
 
-      // The application receives tool.call and returns tool.result.
+      // AssemblyAI POSTs the arguments as JSON. Works in the browser and on a phone.
+      // https://www.assemblyai.com/docs/voice-agents/voice-agent-api/tools/http-tools
       "execution_mode": "interactive",
       "timeout_seconds": 30,
+      "http": {
+        "url": "https://intakescribe.onrender.com/flag_urgent",
+        "http_method": "POST"
+      },
 
       "parameters": {
         "type": "object",
@@ -76,9 +81,14 @@
       "name": "submit_intake",
       "description": "Save one completed non-emergency pre-visit intake after all seven questions have been answered. Call exactly once and never call after flag_urgent.",
 
-      // Hold caller input while the application commits the record.
-      "execution_mode": "hold",
+      // Interactive so the agent can say "one moment" instead of going silent.
+      // https://www.assemblyai.com/docs/voice-agents/voice-agent-api/tools/overview#execution-modes
+      "execution_mode": "interactive",
       "timeout_seconds": 30,
+      "http": {
+        "url": "https://intakescribe.onrender.com/intake",
+        "http_method": "POST"
+      },
 
       "parameters": {
         "type": "object",

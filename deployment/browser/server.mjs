@@ -38,6 +38,53 @@ const AGENT = await (async () => {
 
 console.log(`Agent: ${AGENT.id}`)
 
+// Records AssemblyAI HTTP tools POST here. In-memory only; a Render restart clears them.
+const MAX_RECORDS = 200
+const records = { intakes: [], alerts: [] }
+
+function pushRecord(list, item) {
+  list.unshift(item)
+  if (list.length > MAX_RECORDS) list.length = MAX_RECORDS
+}
+
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    req.on('data', (chunk) => chunks.push(chunk))
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8').trim()
+      if (!raw) return resolve({})
+      try {
+        resolve(JSON.parse(raw))
+      } catch {
+        reject(new Error('invalid json'))
+      }
+    })
+    req.on('error', reject)
+  })
+}
+
+function sendJson(res, status, body) {
+  res.writeHead(status, {
+    'content-type': 'application/json',
+    'access-control-allow-origin': '*',
+    'access-control-allow-headers': 'Authorization, Content-Type',
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+  })
+  res.end(JSON.stringify(body))
+}
+
+function webhookAuthorized(req) {
+  const secret = process.env.INTAKE_WEBHOOK_SECRET
+  if (!secret) return true
+  const header = req.headers.authorization || ''
+  return header === `Bearer ${secret}` || header === secret
+}
+
+function newId(prefix) {
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+}
+
 // --- client ----------------------------------------------------------------
 // Stringified and served as /app.js.
 function clientApp() {
@@ -209,7 +256,7 @@ if ($('log-toggle')) $('log-toggle').onclick = () => {
 
 // --- main nav ---
 function switchMainView(name) {
-  for (const v of ['live', 'history']) {
+  for (const v of ['live', 'history', 'records']) {
     const el = $('view-' + v)
     if (el) el.hidden = v !== name
     const tab = $('main-tab-' + v)
@@ -219,9 +266,11 @@ function switchMainView(name) {
     historyLoaded = true
     loadSessions({ reset: true })
   }
+  if (name === 'records') loadRecords()
 }
 if ($('main-tab-live')) $('main-tab-live').onclick = () => switchMainView('live')
 if ($('main-tab-history')) $('main-tab-history').onclick = () => switchMainView('history')
+if ($('main-tab-records')) $('main-tab-records').onclick = () => switchMainView('records')
 
 // --- side pane tabs ---
 let agentLoaded = false
@@ -893,10 +942,42 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))
 }
 
+function renderRecordList(el, items, empty) {
+  if (!el) return
+  if (!items.length) {
+    el.innerHTML = '<div class="empty">' + empty + '</div>'
+    return
+  }
+  el.innerHTML = items.map((item) => '<pre>' + escapeHtml(JSON.stringify(item, null, 2)) + '</pre>').join('')
+}
+
+async function loadRecords() {
+  const statusEl = $('records-status')
+  if (statusEl) statusEl.textContent = 'Loading…'
+  try {
+    const [intakesRes, alertsRes] = await Promise.all([
+      fetch('/api/intakes'),
+      fetch('/api/alerts'),
+    ])
+    const intakes = intakesRes.ok ? await intakesRes.json() : { intakes: [] }
+    const alerts = alertsRes.ok ? await alertsRes.json() : { alerts: [] }
+    renderRecordList($('records-intakes'), intakes.intakes || [], 'No intakes yet. Complete a non-emergency call.')
+    renderRecordList($('records-alerts'), alerts.alerts || [], 'No urgent flags yet.')
+    if (statusEl) {
+      statusEl.textContent =
+        (intakes.intakes || []).length + ' intake(s) · ' +
+        (alerts.alerts || []).length + ' alert(s) · in-memory, cleared on deploy'
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Error: ' + e.message
+  }
+}
+
 // history controls
 if ($('btn-refresh-history')) $('btn-refresh-history').onclick = () => loadSessions({ reset: true })
 if ($('load-more')) $('load-more').onclick = () => loadSessions({ reset: false })
 if ($('filter-status')) $('filter-status').onchange = () => loadSessions({ reset: true })
+if ($('btn-refresh-records')) $('btn-refresh-records').onclick = () => loadRecords()
 
 }
 
@@ -1088,6 +1169,7 @@ const HTML = `<!DOCTYPE html>
     <div class=\"main-nav\">
       <button class=\"mini on\" id=\"main-tab-live\">Live Call</button>
       <button class=\"mini\" id=\"main-tab-history\">History</button>
+      <button class=\"mini\" id=\"main-tab-records\">Records</button>
     </div>
   </header>
 
@@ -1103,7 +1185,7 @@ const HTML = `<!DOCTYPE html>
           </span>
         </div>
         <div class=\"pane-body\" id=\"transcript\">
-          <div class=\"empty\">Start the call and talk. Partial transcripts appear as they stream, and tool calls show up inline.<br><br>For <strong>AI Voice Intake Scribe</strong>: try \"I have headache for 3 days, taking 20mg Lisinopril\" to trigger flag_medical_entity.</div>
+          <div class=\"empty\">Start the call and talk. Partial transcripts appear as they stream, and tool calls show up inline.<br><br>Riverbend: describe the visit in English or Spanish. Emergencies call <strong>flag_urgent</strong>; a completed intake calls <strong>submit_intake</strong>. Saved records appear in the Records tab.</div>
         </div>
         <div class=\"pane-foot\">
           <select id=\"mic\" aria-label=\"Microphone\"><option value=\"\">Default microphone</option></select>
@@ -1165,6 +1247,29 @@ const HTML = `<!DOCTYPE html>
           • Delete sessions<br>
           • Auto-refresh after live call ends
           </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <!-- RECORDS VIEW -->
+  <div id=\"view-records\" class=\"view\" hidden>
+    <div class=\"history-panes\">
+      <section class=\"pane\">
+        <div class=\"pane-head\">
+          <span>Submitted intakes</span>
+          <div class=\"history-controls\">
+            <span id=\"records-status\" class=\"muted small\"></span>
+            <button class=\"mini\" id=\"btn-refresh-records\">Refresh</button>
+          </div>
+        </div>
+        <div class=\"pane-body\" id=\"records-intakes\">
+          <div class=\"empty\">HTTP tool POSTs land here. In-memory only — cleared on deploy.</div>
+        </div>
+      </section>
+      <section class=\"pane\">
+        <div class=\"pane-head\"><span>Urgent flags</span></div>
+        <div class=\"pane-body\" id=\"records-alerts\">
+          <div class=\"empty\">flag_urgent calls appear here.</div>
         </div>
       </section>
     </div>
@@ -1383,6 +1488,74 @@ const server = http.createServer(async (req, res) => {
       }
       return
     }
+  }
+
+  if (req.method === 'OPTIONS' && (pathname === '/intake' || pathname === '/flag_urgent' || pathname.startsWith('/api/'))) {
+    sendJson(res, 204, {})
+    return
+  }
+
+  if (pathname === '/health') {
+    sendJson(res, 200, { ok: true, agent_id: AGENT.id, intakes: records.intakes.length, alerts: records.alerts.length })
+    return
+  }
+
+  if (pathname === '/intake' && req.method === 'POST') {
+    if (!webhookAuthorized(req)) {
+      sendJson(res, 401, { ok: false, error: 'unauthorized' })
+      return
+    }
+    try {
+      const body = await readJson(req)
+      const id = newId('int_')
+      pushRecord(records.intakes, { id, received_at: new Date().toISOString(), ...body })
+      console.log('submit_intake', id, body.callback_number || '')
+      sendJson(res, 200, {
+        ok: true,
+        intake_id: id,
+        message: 'Intake saved. Thank the caller and remind them a live interpreter will be at the appointment.',
+      })
+    } catch {
+      sendJson(res, 400, { ok: false, error: 'invalid json' })
+    }
+    return
+  }
+
+  if (pathname === '/flag_urgent' && req.method === 'POST') {
+    if (!webhookAuthorized(req)) {
+      sendJson(res, 401, { ok: false, error: 'unauthorized' })
+      return
+    }
+    try {
+      const body = await readJson(req)
+      const id = newId('urg_')
+      pushRecord(records.alerts, { id, received_at: new Date().toISOString(), ...body })
+      console.log('flag_urgent', id, body.reason || '')
+      sendJson(res, 200, {
+        ok: true,
+        alert_id: id,
+        message: 'Staff have been alerted. Tell the caller to hang up and call 911 or go to the nearest emergency room now.',
+      })
+    } catch {
+      sendJson(res, 400, { ok: false, error: 'invalid json' })
+    }
+    return
+  }
+
+  if (pathname === '/api/intakes' && req.method === 'GET') {
+    sendJson(res, 200, { intakes: records.intakes })
+    return
+  }
+
+  if (pathname === '/api/alerts' && req.method === 'GET') {
+    sendJson(res, 200, { alerts: records.alerts })
+    return
+  }
+
+  // Unknown non-GET must not fall through to HTML — AssemblyAI would treat a 200 HTML page as a successful tool result.
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    sendJson(res, 404, { error: 'not found' })
+    return
   }
 
   // default: serve HTML
