@@ -1,0 +1,153 @@
+{
+  // Stored-agent display name.
+  "name": "riverbend-previsit-intake",
+
+  // Spoken literally by TTS; it is not interpreted by the LLM.
+  "greeting": "Thank you for calling Riverbend Community Clinic's pre-visit line. If this is a medical emergency, hang up now and call 911. Please tell me the reason for your visit, in English or Spanish. Gracias por llamar a la línea de admisión previa a la cita de Riverbend Community Clinic. Si esto es una emergencia médica, cuelgue y llame al 911 ahora. Por favor, dígame la razón de su visita, en inglés o en español.",
+
+  "voice": {
+    "voice_id": "ivy"
+  },
+
+  "input": {
+    // Bias recognition toward the two supported call languages.
+    "language_codes": ["en", "es"],
+
+    // Context for speech recognition, not behavioral instructions.
+    "transcription_prompt": "A bilingual English and Spanish pre-visit medical intake call for Riverbend Community Clinic. Callers may discuss symptoms, medications, drug names, allergies, dates, and phone numbers.",
+
+    "keyterms": [
+      "Riverbend Community Clinic",
+      "metformin",
+      "lisinopril",
+      "ibuprofen",
+      "albuterol",
+      "penicillin"
+    ],
+
+    "turn_detection": {
+      "vad_threshold": 0.5,
+      "min_silence": 1400,
+      "max_silence": 4000,
+      "interrupt_response": true
+    }
+  },
+
+  "system_prompt": "You are the pre-visit intake line for Riverbend Community Clinic. You are not a medical provider. Never give medical advice, diagnoses, treatment recommendations, or opinions about symptom severity. Your only job is to gather information in the caller's own language before the visit. Tell the caller that a live, qualified interpreter will be present for the actual medical conversation at the appointment and that this call does not replace that interpreter.\n\nLANGUAGE: Infer the caller's language from their response to the greeting. Continue in that language. If they switch between English and Spanish, switch naturally with them. Do not translate mechanically.\n\nEMERGENCY WATCH: If the caller reports chest pain or pressure; trouble breathing or shortness of breath; face drooping, arm weakness, or slurred speech; severe bleeding that will not stop; loss of consciousness or fainting; throat swelling, trouble swallowing, or another sign of severe allergic reaction; a seizure; thoughts of suicide or self-harm with a plan or intent; or a high fever in an infant under three months, immediately call flag_urgent. Also call it if something clearly sounds unable to wait. Do not diagnose or investigate further. After calling the tool, clearly tell the caller in their language to hang up and call 911 or go to the nearest emergency room now. Do not ask any more intake questions. Say goodbye briefly so the application can end the call.\n\nSTANDARD INTAKE: If no emergency applies, ask these questions one at a time. Keep the conversation short and confirm each answer briefly: 1. What is the main reason for the visit? 2. When did it start, and is it getting better, worse, or staying about the same? 3. Are there any other symptoms? 4. What medications are they currently taking? 5. Do they have medication allergies? 6. What language should the live interpreter use at the appointment? Explain that it can differ from this call's language. 7. What is the best callback phone number? Read the phone number back and ask the caller to confirm it.\n\nCLOSING: After collecting all seven answers, call submit_intake exactly once. Do not call it if flag_urgent was called. After submit_intake succeeds, thank the caller, remind them that a live interpreter will be with them at the appointment, and say goodbye briefly so the application can end the call.\n\nTOOL FAILURE: If either tool fails, apologize once, say there was a brief system issue, and tell the caller that clinic staff will call them back at the number provided. Do not retry the tool. Say goodbye briefly so the application can end the call.",
+
+  "tools": [
+    {
+      "type": "function",
+      "name": "flag_urgent",
+      "description": "Immediately alert clinic staff when the caller reports a possible emergency. Call this as soon as a warning sign is reported, before giving the caller the emergency instruction.",
+
+      // The application receives tool.call and returns tool.result.
+      "execution_mode": "interactive",
+      "timeout_seconds": 30,
+
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "A short factual description of what the caller reported, without diagnosis."
+          },
+          "caller_language": {
+            "type": "string",
+            "enum": ["English", "Spanish", "Other", "Unknown"],
+            "description": "The language currently spoken by the caller."
+          },
+          "callback_number": {
+            "type": "string",
+            "description": "The confirmed callback number if already collected, otherwise an empty string."
+          }
+        },
+        "required": [
+          "reason",
+          "caller_language",
+          "callback_number"
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    {
+      "type": "function",
+      "name": "submit_intake",
+      "description": "Save one completed non-emergency pre-visit intake after all seven questions have been answered. Call exactly once and never call after flag_urgent.",
+
+      // Hold caller input while the application commits the record.
+      "execution_mode": "hold",
+      "timeout_seconds": 30,
+
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "main_reason": {
+            "type": "string",
+            "description": "The caller's main reason for the visit in their own words."
+          },
+          "started_when": {
+            "type": "string",
+            "description": "When the concern started, preserving the caller's phrasing."
+          },
+          "progression": {
+            "type": "string",
+            "enum": [
+              "better",
+              "worse",
+              "about_the_same",
+              "unknown"
+            ],
+            "description": "Whether the concern is improving, worsening, unchanged, or unknown."
+          },
+          "other_symptoms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other reported symptoms; use an empty array if none."
+          },
+          "medications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Current medications as reported; use an empty array if none."
+          },
+          "medication_allergies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Medication allergies as reported; use an empty array if none."
+          },
+          "interpreter_language": {
+            "type": "string",
+            "description": "Requested language for the live interpreter."
+          },
+          "callback_number": {
+            "type": "string",
+            "description": "The callback number read back to and confirmed by the caller."
+          },
+          "caller_language": {
+            "type": "string",
+            "description": "The primary language used during this call."
+          }
+        },
+        "required": [
+          "main_reason",
+          "started_when",
+          "progression",
+          "other_symptoms",
+          "medications",
+          "medication_allergies",
+          "interpreter_language",
+          "callback_number",
+          "caller_language"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
