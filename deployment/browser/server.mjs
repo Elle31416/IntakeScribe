@@ -1191,7 +1191,7 @@ const HTML = `<!DOCTYPE html>
 <body>
 <main>
   <header>
-    <h1>${AGENT.name}</h1>
+    <h1>Riverdale</h1>
     <span class=\"status idle\" id=\"status\"><span id=\"status-text\">idle</span></span>
     <span class=\"meter\"><span id=\"elapsed\">0:00</span><span id=\"cost\">$0.000</span></span>
     <div class=\"main-nav\">
