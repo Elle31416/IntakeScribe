@@ -3,7 +3,7 @@ services:
     name: ai-voice-intake-scribe
     runtime: node
     plan: free
-    buildCommand: 'true'
+    buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /
     envVars:

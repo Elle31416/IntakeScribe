@@ -7,6 +7,7 @@
 // and short-lived pre-signed artifact URLs via /api/*.
 
 import http from 'node:http'
+import { WebSocketServer, WebSocket } from 'ws'
 import { aai, loadEnv, publishAgent, readAgent, required, storedAgentId } from '../../lib.mjs'
 
 loadEnv()
@@ -322,11 +323,11 @@ async function mintToken() {
   return token
 }
 
-async function connectSocket() {
-  const token = await mintToken()
-  const url = new URL('wss://agents.assemblyai.com/v1/ws')
-  url.searchParams.set('token', token)
-  return new WebSocket(url)
+function connectSocket() {
+  // Same-origin proxy. The server attaches the API key so stored agent_id
+  // resolves on the account that owns the agent (browser tokens were 404ing).
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return new WebSocket(`${proto}//${location.host}/voice`)
 }
 
 async function start() {
@@ -464,19 +465,11 @@ async function start() {
             if (msg.code === 'agent_not_found' && !retriedAgentId) {
               retriedAgentId = true
               reconnecting = true
-              logEvent('up', 'retry', 'fresh token + same agent_id')
+              logEvent('up', 'retry', 'reconnect via /voice proxy')
               socket.close()
-              connectSocket()
-                .then((next) => {
-                  ws = next
-                  reconnecting = false
-                  attach(ws, { agent_id: AGENT.id })
-                })
-                .catch((err) => {
-                  reconnecting = false
-                  setStatus('error', err.message)
-                  reset()
-                })
+              ws = connectSocket()
+              reconnecting = false
+              attach(ws, { agent_id: AGENT.id })
               break
             }
             setStatus('error', msg.message || msg.code)
@@ -510,10 +503,7 @@ async function start() {
       }
     }
 
-    const token = await mintToken()
-    const url = new URL('wss://agents.assemblyai.com/v1/ws')
-    url.searchParams.set('token', token)
-    ws = new WebSocket(url)
+    ws = connectSocket()
     attach(ws, { agent_id: AGENT.id })
   } catch (error) {
     setStatus('error', error.message)
@@ -1387,7 +1377,10 @@ const server = http.createServer(async (req, res) => {
     return
   }
   if (pathname === '/app.js') {
-    res.writeHead(200, { 'content-type': 'text/javascript' })
+    res.writeHead(200, {
+      'content-type': 'text/javascript',
+      'cache-control': 'no-store, no-cache, must-revalidate',
+    })
     res.end('(' + clientApp.toString() + ')();')
     return
   }
@@ -1614,5 +1607,52 @@ server.on('error', (err) => {
   }
   throw err
 })
-server.on('listening', () => console.log(`Talk to it: http://localhost:${port} | History API: /api/sessions`))
+const voiceWss = new WebSocketServer({ noServer: true })
+server.on('upgrade', (req, socket, head) => {
+  let pathname = '/'
+  try {
+    pathname = new URL(req.url, 'http://localhost').pathname
+  } catch {
+    socket.destroy()
+    return
+  }
+  if (pathname !== '/voice') {
+    socket.destroy()
+    return
+  }
+  voiceWss.handleUpgrade(req, socket, head, (client) => {
+    const upstream = new WebSocket('wss://agents.assemblyai.com/v1/ws', {
+      headers: { Authorization: `Bearer ${process.env.ASSEMBLYAI_API_KEY}` },
+    })
+    const queue = []
+    const sendUp = (data, isBinary) => {
+      if (upstream.readyState === WebSocket.OPEN) {
+        upstream.send(data, { binary: isBinary })
+      } else {
+        queue.push([data, isBinary])
+      }
+    }
+    client.on('message', (data, isBinary) => sendUp(data, isBinary))
+    upstream.on('open', () => {
+      for (const [data, isBinary] of queue) upstream.send(data, { binary: isBinary })
+      queue.length = 0
+    })
+    upstream.on('message', (data, isBinary) => {
+      if (client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary })
+    })
+    const shutdown = () => {
+      try { client.close() } catch {}
+      try { upstream.close() } catch {}
+    }
+    client.on('close', () => { try { upstream.close() } catch {} })
+    upstream.on('close', () => { try { client.close() } catch {} })
+    client.on('error', shutdown)
+    upstream.on('error', (err) => {
+      console.error('upstream voice ws:', err.message)
+      shutdown()
+    })
+  })
+})
+
+server.on('listening', () => console.log(`Talk to it: http://localhost:${port} | History API: /api/sessions | Voice proxy: /voice`))
 server.listen(port)

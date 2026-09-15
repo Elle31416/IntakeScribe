@@ -12,5 +12,8 @@
     "publish": "node publish.mjs",
     "import": "node import.mjs",
     "phone": "node deployment/telephony/connect.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
   }
 }
