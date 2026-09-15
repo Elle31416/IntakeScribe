@@ -1,5 +1,13 @@
 <img src="assemblyai.png" width="500"/>
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Elle31416/IntakeScribe)
+[![Voice Agent API](https://img.shields.io/badge/docs-Voice%20Agent%20API-2545E6)](https://www.assemblyai.com/docs/voice-agents/voice-agent-api)
+
+> **Fork: IntakeScribe** - Clinical intake voice agent + Session History dashboard
+> - Agent: `AI Voice Intake Scribe` (agent_b0aca15004de4ab2b39bbfc1ce360956)
+> - Features: Live call + History API (list, transcript parsing, audio playback, timeline, tools, delete)
+> - Deploy: One-click Render button above, see [RENDER_DEPLOY.md](RENDER_DEPLOY.md)
+
 ---
 
 [![Voice Agent API](https://img.shields.io/badge/docs-Voice%20Agent%20API-2545E6)](https://www.assemblyai.com/docs/voice-agents/voice-agent-api)
@@ -131,11 +139,19 @@ From there it behaves like any other file in `agents/`: edit it, publish, call.
 
 Twilio passes the call to AssemblyAI over SIP, so nothing in this repo sits in the audio path.
 
-## Hosting the browser app
+## Hosting the browser app (IntakeScribe + History)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AssemblyAI/voice-agent-starter-js)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Elle31416/IntakeScribe)
 
-Render reads [render.yaml](render.yaml) and prompts for exactly one value, `ASSEMBLYAI_API_KEY`, because that is the only variable marked `sync: false`. It sets `PORT` itself. The other two arrive with defaults you can change under Environment on the service:
+**This fork includes Session History dashboard** - see [RENDER_DEPLOY.md](RENDER_DEPLOY.md) for full guide.
+
+Quick Render deploy for `Elle31416/IntakeScribe`:
+1. Click Deploy button above
+2. Set `ASSEMBLYAI_API_KEY` = your key from dashboard
+3. Set `AGENT=ai-voice-intake-scribe`, `AGENT_ID=agent_b0aca15004de4ab2b39bbfc1ce360956`
+4. Deploy → Live at `https://your-service.onrender.com` with Live Call + History tabs
+
+Original docs below still apply. Render reads [render.yaml](render.yaml) and prompts for exactly one value, `ASSEMBLYAI_API_KEY`, because that is the only variable marked `sync: false`. It sets `PORT` itself. The other two arrive with defaults you can change under Environment on the service:
 
 | Variable | Default | What it does |
 | --- | --- | --- |
