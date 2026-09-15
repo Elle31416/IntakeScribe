@@ -313,20 +313,49 @@ async function addWorklet(ctx, code, name) {
   return new AudioWorkletNode(ctx, name)
 }
 
+async function mintToken() {
+  const res = await fetch('/token')
+  if (!res.ok) throw new Error('could not mint a token, check the API key')
+  const { token } = await res.json()
+  if (!token) throw new Error('token response missing token')
+  return token
+}
+
+async function inlineSession() {
+  const res = await fetch('/agent')
+  if (!res.ok) throw new Error('could not load agent for inline fallback')
+  const agent = await res.json()
+  const tools = (agent.tools || []).map((t) => {
+    const tool = {
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+      timeout_seconds: t.timeout_seconds || 30,
+      execution_mode: t.execution_mode || 'interactive',
+    }
+    if (t.http && t.http.url) {
+      tool.http = { url: t.http.url, http_method: t.http.http_method || 'POST' }
+    }
+    return tool
+  })
+  return {
+    system_prompt: agent.system_prompt,
+    greeting: agent.greeting,
+    tools,
+    input: agent.input,
+    output: {
+      voice: agent.output?.voice || agent.voice?.voice_id || 'ivy',
+      format: agent.output?.format || { encoding: 'audio/pcm', sample_rate: 24000 },
+    },
+  }
+}
+
 async function start() {
   $('btn').disabled = true
   $('mic').disabled = true
   setStatus('connecting')
 
   try {
-    const res = await fetch('/token')
-    if (!res.ok) {
-      setStatus('error', 'could not mint a token, check the API key')
-      reset()
-      return
-    }
-    const { token } = await res.json()
-
     captureCtx = new AudioContext({ sampleRate: WIRE_RATE })
     playbackCtx = new AudioContext({ sampleRate: WIRE_RATE })
     await Promise.all([captureCtx.resume(), playbackCtx.resume()])
@@ -348,13 +377,12 @@ async function start() {
     const capture = await addWorklet(captureCtx, CAPTURE_WORKLET, 'capture')
     captureCtx.createMediaStreamSource(mic).connect(capture)
 
-    const url = new URL('wss://agents.assemblyai.com/v1/ws')
-    url.searchParams.set('token', token)
-    ws = new WebSocket(url)
     let ready = false
+    let reconnecting = false
+    let usedInline = false
 
     capture.port.onmessage = ({ data }) => {
-      if (!ready || ws.readyState !== 1) return
+      if (!ready || !ws || ws.readyState !== 1) return
       const bytes = new Uint8Array(data)
       let binary = ''
       for (let i = 0; i < bytes.length; i += 0x8000) {
@@ -364,119 +392,154 @@ async function start() {
       logEvent('up', 'input.audio')
     }
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'session.update', session: { agent_id: AGENT.id } }))
-      logEvent('up', 'session.update', AGENT.id)
-    }
+    const attach = (socket, session) => {
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ type: 'session.update', session }))
+        logEvent('up', 'session.update', session.agent_id || 'inline (no agent_id)')
+      }
 
-    ws.onmessage = ({ data }) => {
-      const msg = JSON.parse(data)
-      switch (msg.type) {
-        case 'session.ready':
-          ready = true
-          lastSessionId = msg.session_id
-          callStart = Date.now()
-          timer = setInterval(tick, 1000)
-          tick()
-          setStatus('listening')
-          $('btn').disabled = false
-          $('btn').textContent = 'End call'
-          $('btn').classList.add('live')
-          logEvent('down', msg.type, msg.session_id)
-          // show live session id
-          if ($('live-session-id')) $('live-session-id').textContent = msg.session_id
-          break
+      socket.onmessage = ({ data }) => {
+        const msg = JSON.parse(data)
+        switch (msg.type) {
+          case 'session.ready':
+            ready = true
+            lastSessionId = msg.session_id
+            callStart = Date.now()
+            timer = setInterval(tick, 1000)
+            tick()
+            setStatus('listening')
+            $('btn').disabled = false
+            $('btn').textContent = 'End call'
+            $('btn').classList.add('live')
+            logEvent('down', msg.type, msg.session_id)
+            if ($('live-session-id')) $('live-session-id').textContent = msg.session_id
+            break
 
-        case 'input.speech.started':
-          playback?.port.postMessage('stop')
-          setStatus('listening')
-          logEvent('down', msg.type)
-          break
+          case 'input.speech.started':
+            playback?.port.postMessage('stop')
+            setStatus('listening')
+            logEvent('down', msg.type)
+            break
 
-        case 'reply.started':
-          setStatus('speaking')
-          logEvent('down', msg.type)
-          break
+          case 'reply.started':
+            setStatus('speaking')
+            logEvent('down', msg.type)
+            break
 
-        case 'reply.audio': {
-          const raw = atob(msg.data)
-          const bytes = new Uint8Array(raw.length)
-          for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
-          playback?.port.postMessage(bytes.buffer, [bytes.buffer])
-          logEvent('down', msg.type)
-          break
-        }
-
-        case 'reply.done':
-          setStatus('listening')
-          if (msg.status === 'interrupted') playback?.port.postMessage('stop')
-          logEvent('down', msg.type, msg.status)
-          break
-
-        case 'transcript.user.delta':
-          partial('you', msg.text)
-          logEvent('down', msg.type, msg.text)
-          break
-
-        case 'transcript.agent.delta':
-          logEvent('down', msg.type, msg.delta)
-          if (msg.reply_id && msg.reply_id === printedReply) break
-          if (msg.reply_id !== liveReply) {
-            liveReply = msg.reply_id
-            dropPartial('agent')
+          case 'reply.audio': {
+            const raw = atob(msg.data)
+            const bytes = new Uint8Array(raw.length)
+            for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
+            playback?.port.postMessage(bytes.buffer, [bytes.buffer])
+            logEvent('down', msg.type)
+            break
           }
-          partial('agent', appendDelta(partialText.agent || '', msg.delta))
-          break
 
-        case 'transcript.user':
-          addLine('you', msg.text)
-          logEvent('down', msg.type, msg.text)
-          break
+          case 'reply.done':
+            setStatus('listening')
+            if (msg.status === 'interrupted') playback?.port.postMessage('stop')
+            logEvent('down', msg.type, msg.status)
+            break
 
-        case 'transcript.agent':
-          printedReply = msg.reply_id ?? printedReply
-          addLine('agent', msg.text)
-          logEvent('down', msg.type, msg.text)
-          break
+          case 'transcript.user.delta':
+            partial('you', msg.text)
+            logEvent('down', msg.type, msg.text)
+            break
 
-        case 'tool.call': {
-          const args = JSON.stringify(msg.arguments ?? {})
-          addLine('tool', `${msg.name}(${args})`)
-          logEvent('down', msg.type, `${msg.name} ${args}`)
-          break
+          case 'transcript.agent.delta':
+            logEvent('down', msg.type, msg.delta)
+            if (msg.reply_id && msg.reply_id === printedReply) break
+            if (msg.reply_id !== liveReply) {
+              liveReply = msg.reply_id
+              dropPartial('agent')
+            }
+            partial('agent', appendDelta(partialText.agent || '', msg.delta))
+            break
+
+          case 'transcript.user':
+            addLine('you', msg.text)
+            logEvent('down', msg.type, msg.text)
+            break
+
+          case 'transcript.agent':
+            printedReply = msg.reply_id ?? printedReply
+            addLine('agent', msg.text)
+            logEvent('down', msg.type, msg.text)
+            break
+
+          case 'tool.call': {
+            const args = JSON.stringify(msg.arguments ?? {})
+            addLine('tool', `${msg.name}(${args})`)
+            logEvent('down', msg.type, `${msg.name} ${args}`)
+            break
+          }
+
+          case 'session.ended':
+            logEvent('down', msg.type)
+            socket.close()
+            break
+
+          case 'session.error': {
+            const detail = [msg.code, msg.message, msg.param && ('param=' + msg.param)].filter(Boolean).join(' · ')
+            logEvent('down', msg.type, detail)
+            if (msg.code === 'agent_not_found' && !usedInline) {
+              usedInline = true
+              reconnecting = true
+              logEvent('up', 'retry', 'agent_id not found; reconnecting with inline config')
+              socket.close()
+              Promise.resolve()
+                .then(() => inlineSession())
+                .then(async (session) => {
+                  const token = await mintToken()
+                  const url = new URL('wss://agents.assemblyai.com/v1/ws')
+                  url.searchParams.set('token', token)
+                  ws = new WebSocket(url)
+                  reconnecting = false
+                  attach(ws, session)
+                })
+                .catch((err) => {
+                  reconnecting = false
+                  setStatus('error', err.message)
+                  reset()
+                })
+              break
+            }
+            setStatus('error', msg.message || msg.code)
+            break
+          }
+
+          default:
+            logEvent('down', msg.type)
         }
+      }
 
-        case 'session.ended':
-          logEvent('down', msg.type)
-          ws.close()
-          break
-
-        case 'session.error':
-          setStatus('error', msg.message)
-          logEvent('down', msg.type, `${msg.code}: ${msg.message}`)
-          break
-
-        default:
-          logEvent('down', msg.type)
+      socket.onclose = () => {
+        if (reconnecting) return
+        setStatus('idle')
+        reset()
+        if (historyLoaded) {
+          setTimeout(() => loadSessions({ reset: true }), 1500)
+        }
+        if (lastSessionId && $('last-session-link')) {
+          $('last-session-link').hidden = false
+          $('last-session-link').onclick = () => {
+            switchMainView('history')
+            setTimeout(() => selectSession(lastSessionId), 300)
+          }
+        }
+      }
+      socket.onerror = () => {
+        if (reconnecting) return
+        setStatus('error', 'connection failed')
+        reset()
       }
     }
 
-    ws.onclose = () => { 
-      setStatus('idle'); 
-      reset();
-      // auto refresh history after call ends
-      if (historyLoaded) {
-        setTimeout(() => loadSessions({ reset: true }), 1500)
-      }
-      if (lastSessionId && $('last-session-link')) {
-        $('last-session-link').hidden = false
-        $('last-session-link').onclick = () => {
-          switchMainView('history')
-          setTimeout(() => selectSession(lastSessionId), 300)
-        }
-      }
-    }
-    ws.onerror = () => { setStatus('error', 'connection failed'); reset() }
+    const token = await mintToken()
+    const url = new URL('wss://agents.assemblyai.com/v1/ws')
+    url.searchParams.set('token', token)
+    ws = new WebSocket(url)
+    attach(ws, { agent_id: AGENT.id })
   } catch (error) {
     setStatus('error', error.message)
     reset()
@@ -1338,7 +1401,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (pathname === '/token') {
     try {
-      const token = await aai('/token?product=voice_agent&expires_in_seconds=60')
+      const token = await aai('/token?product=voice_agent&expires_in_seconds=300')
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify(token))
     } catch (error) {
