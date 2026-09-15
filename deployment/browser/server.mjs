@@ -37,6 +37,7 @@ const AGENT = await (async () => {
 })()
 
 console.log(`Agent: ${AGENT.id}`)
+const ASSET_V = Date.now().toString(36)
 
 // Records AssemblyAI HTTP tools POST here. In-memory only; a Render restart clears them.
 const MAX_RECORDS = 200
@@ -321,33 +322,11 @@ async function mintToken() {
   return token
 }
 
-async function inlineSession() {
-  const res = await fetch('/agent')
-  if (!res.ok) throw new Error('could not load agent for inline fallback')
-  const agent = await res.json()
-  const tools = (agent.tools || []).map((t) => {
-    const tool = {
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
-      timeout_seconds: t.timeout_seconds || 30,
-      execution_mode: t.execution_mode || 'interactive',
-    }
-    if (t.http && t.http.url) {
-      tool.http = { url: t.http.url, http_method: t.http.http_method || 'POST' }
-    }
-    return tool
-  })
-  return {
-    system_prompt: agent.system_prompt,
-    greeting: agent.greeting,
-    tools,
-    input: agent.input,
-    output: {
-      voice: agent.output?.voice || agent.voice?.voice_id || 'ivy',
-      format: agent.output?.format || { encoding: 'audio/pcm', sample_rate: 24000 },
-    },
-  }
+async function connectSocket() {
+  const token = await mintToken()
+  const url = new URL('wss://agents.assemblyai.com/v1/ws')
+  url.searchParams.set('token', token)
+  return new WebSocket(url)
 }
 
 async function start() {
@@ -379,7 +358,7 @@ async function start() {
 
     let ready = false
     let reconnecting = false
-    let usedInline = false
+    let retriedAgentId = false
 
     capture.port.onmessage = ({ data }) => {
       if (!ready || !ws || ws.readyState !== 1) return
@@ -482,20 +461,16 @@ async function start() {
           case 'session.error': {
             const detail = [msg.code, msg.message, msg.param && ('param=' + msg.param)].filter(Boolean).join(' · ')
             logEvent('down', msg.type, detail)
-            if (msg.code === 'agent_not_found' && !usedInline) {
-              usedInline = true
+            if (msg.code === 'agent_not_found' && !retriedAgentId) {
+              retriedAgentId = true
               reconnecting = true
-              logEvent('up', 'retry', 'agent_id not found; reconnecting with inline config')
+              logEvent('up', 'retry', 'fresh token + same agent_id')
               socket.close()
-              Promise.resolve()
-                .then(() => inlineSession())
-                .then(async (session) => {
-                  const token = await mintToken()
-                  const url = new URL('wss://agents.assemblyai.com/v1/ws')
-                  url.searchParams.set('token', token)
-                  ws = new WebSocket(url)
+              connectSocket()
+                .then((next) => {
+                  ws = next
                   reconnecting = false
-                  attach(ws, session)
+                  attach(ws, { agent_id: AGENT.id })
                 })
                 .catch((err) => {
                   reconnecting = false
@@ -1339,7 +1314,7 @@ const HTML = `<!DOCTYPE html>
   </div>
 </main>
 <script>window.AGENT = ${JSON.stringify(AGENT).replace(/</g, '\\u003c')}</script>
-<script src=\"/app.js\"></script>
+<script src=\"/app.js?v=${ASSET_V}\"></script>
 </body>
 </html>`
 
@@ -1622,7 +1597,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   // default: serve HTML
-  res.writeHead(200, { 'content-type': 'text/html' })
+  res.writeHead(200, {
+    'content-type': 'text/html',
+    'cache-control': 'no-store, no-cache, must-revalidate',
+  })
   res.end(HTML)
 })
 
