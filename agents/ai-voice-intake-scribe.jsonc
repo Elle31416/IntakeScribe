@@ -1,0 +1,142 @@
+// Imported from agent agent_b0aca15004de4ab2b39bbfc1ce360956.
+//
+// This is the body of POST /v1/agents, so every field is documented at
+// https://www.assemblyai.com/docs/voice-agents/voice-agent-api/create-agent
+// Edit it and run `npm run publish` to push the change back to the same agent.
+{
+  "name": "AI Voice Intake Scribe",
+  "system_prompt": "You are a calm clinical intake assistant. You gather information only.\nNever diagnose, give medical advice, recommend treatment, evaluate drug\ninteractions, or tell the patient to change medication. If asked, say a\nclinician will address that during the visit.\n\nAsk one short question at a time. Gather, in order:\n1. reason for the visit;\n2. symptoms and duration;\n3. current medications and dosages;\n4. known allergies.\n\nCall flag_medical_entity immediately whenever the patient mentions a\nmedication, dosage, diagnosed condition, or injury. Do not add clinical\ninterpretation; the note field should only explain the mention's context.\n\nCall add_followup_item only when the patient explicitly reports an already\nplanned or requested follow-up, such as a clinician-requested test, referral,\nprescription renewal, or callback. Never invent or recommend an action.\n\nAfter all four intake areas are covered, call generate_soap_note exactly once.\nKeep Objective limited to facts observable or reported during this intake.\nAssessment must summarize reported concerns without diagnosing. Plan must only\nrecord reported existing plans and clinician-review items, not new advice.\nAfter the SOAP tool succeeds, thank the patient and tell them to click End call.",
+  "greeting": "Hi, I'm going to ask a few quick questions before your visit. I collect information for clinician review and cannot give medical advice. What brings you in today?",
+  "tools": [
+    {
+      "id": "tool_25f43cb0458a49f897f3f524ef2cf0c4",
+      "name": "flag_medical_entity",
+      "description": "Record a medication, dosage, diagnosed condition, or injury immediately after the patient mentions it.",
+      "http": null,
+      "parameters": {
+        "type": "object",
+        "required": [
+          "entity_type",
+          "text"
+        ],
+        "properties": {
+          "note": {
+            "type": "string",
+            "description": "Neutral context from the patient's words; no diagnosis or advice."
+          },
+          "text": {
+            "type": "string",
+            "description": "Exact concise mention, for example '20 mg of Lisinopril'."
+          },
+          "entity_type": {
+            "enum": [
+              "drug",
+              "medical_condition",
+              "injury"
+            ],
+            "type": "string",
+            "description": "Choose the literal category of the mention."
+          }
+        }
+      },
+      "timeout_seconds": 120,
+      "execution_mode": "interactive",
+      "response_instructions": null,
+      "dtmf_collected_arguments": []
+    },
+    {
+      "id": "tool_f22db6b3f9ed46f3aa7cc093dd4e9adb",
+      "name": "add_followup_item",
+      "description": "Record an explicitly reported existing or requested follow-up. Never invent or recommend a clinical action.",
+      "http": null,
+      "parameters": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "type": "string",
+            "description": "Neutral clinician-review item, for example 'Review requested prescription renewal'."
+          }
+        }
+      },
+      "timeout_seconds": 120,
+      "execution_mode": "interactive",
+      "response_instructions": null,
+      "dtmf_collected_arguments": []
+    },
+    {
+      "id": "tool_c0546d7eecd04ecfbc2d4d121952c6cf",
+      "name": "generate_soap_note",
+      "description": "Draft the four SOAP sections exactly once after reason, symptoms, medications, and allergies are known.",
+      "http": null,
+      "parameters": {
+        "type": "object",
+        "required": [
+          "subjective",
+          "objective",
+          "assessment",
+          "plan"
+        ],
+        "properties": {
+          "plan": {
+            "type": "string",
+            "description": "Existing reported plans and clinician-review items only; no new advice."
+          },
+          "objective": {
+            "type": "string",
+            "description": "Only observable or reported intake facts; no invented exam findings."
+          },
+          "assessment": {
+            "type": "string",
+            "description": "Non-diagnostic summary for clinician review."
+          },
+          "subjective": {
+            "type": "string",
+            "description": "Patient-reported reason, symptoms, duration, medicines, and allergies."
+          }
+        }
+      },
+      "timeout_seconds": 120,
+      "execution_mode": "interactive",
+      "response_instructions": null,
+      "dtmf_collected_arguments": []
+    }
+  ],
+  "pre_connect_requests": [],
+  "voice": {
+    "voice_id": "alba"
+  },
+  "input": {
+    "format": {
+      "encoding": "audio/pcm",
+      "sample_rate": 24000
+    },
+    "keyterms": [
+      "Lisinopril",
+      "Metformin",
+      "Ozempic",
+      "Amoxicillin",
+      "Ibuprofen"
+    ],
+    "turn_detection": {
+      "max_silence": 4000,
+      "min_silence": 1400,
+      "vad_threshold": 0.5,
+      "interrupt_response": true
+    }
+  },
+  "output": {
+    "voice": "alba",
+    "format": {
+      "encoding": "audio/pcm",
+      "sample_rate": 24000
+    },
+    "volume": 100
+  },
+  "transfer_targets": [],
+  "outbound_trunk_id": null,
+  "caller_id": null,
+  "llm": []
+}

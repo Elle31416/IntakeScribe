@@ -1,21 +1,24 @@
 services:
   - type: web
-    name: voice-agent
+    name: ai-voice-intake-scribe
     runtime: node
     plan: free
     buildCommand: 'true'
     startCommand: npm start
+    healthCheckPath: /
     envVars:
-      # sync: false is what makes Render prompt for a value during Blueprint
-      # creation. Everything below with a literal value is set for you and can
-      # be changed afterwards under Environment on the service.
+      # sync: false makes Render prompt for a value during Blueprint creation
       - key: ASSEMBLYAI_API_KEY
         sync: false
       # Which agents/<name>.jsonc the service publishes on boot.
+      # Updated to use the clinical intake scribe with session-history dashboard
       - key: AGENT
-        value: minimal
+        value: ai-voice-intake-scribe
       # Paste an id from your .env here to serve that exact agent. Left empty,
       # the service publishes AGENT itself and reuses the agent of the same
-      # name on later restarts.
+      # name on later restarts. For production, set to agent_b0aca15004de4ab2b39bbfc1ce360956
       - key: AGENT_ID
         value: ''
+      # Optional: pin API base if your account is regional
+      # - key: AGENTS_API_BASE
+      #   value: https://agents.assemblyai.com/v1
