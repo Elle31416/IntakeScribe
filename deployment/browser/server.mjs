@@ -233,6 +233,7 @@ let analyser, analyserData, vizRaf, liveReply = null, printedReply = null;
 let isMuted = false;
 const open = new Map();
 function paint(live, final){ const now=performance.now(); if(!final && now-live.painted<100) return; live.painted=now; live.row.querySelector('.count').textContent=live.count>1?'×'+live.count:''; if(live.detail) live.row.querySelector('.detail').textContent=live.detail; }
+function logEvent(){ /* kept for compat — original logged to side pane */ }
 
 async function listMics() {
   if (!navigator.mediaDevices?.enumerateDevices) return;
@@ -360,8 +361,8 @@ if (ack && btnStart) {
   updateAck();
 }
 
-// bind start/end
-if ($('btn')) $('btn').onclick = () => (ws?.readyState <= 1 ? start() : stop());
+// bind start/end — original logic: if CONNECTING/OPEN then stop, else start
+if ($('btn')) $('btn').onclick = () => (ws?.readyState <= 1 ? stop() : start());
 $('btn-end')?.addEventListener('click', stop);
 $('btn-mute')?.addEventListener('click', toggleMute);
 function toggleMute(){
@@ -498,6 +499,7 @@ async function start(){
     setStatus('connecting');
     let ready = false;
     let reconnecting = false;
+    let retriedAgentId = false;
     capture.port.onmessage = ({ data }) => {
       if (!ready || !ws || ws.readyState !== 1) return;
       if (isMuted) return;
@@ -509,6 +511,7 @@ async function start(){
     const attach = (socket, session) => {
       socket.onopen = () => {
         socket.send(JSON.stringify({ type: 'session.update', session }));
+        logEvent('up', 'session.update', session.agent_id || 'inline');
       };
       socket.onmessage = ({ data }) => {
         const msg = JSON.parse(data);
@@ -570,6 +573,18 @@ async function start(){
             socket.close();
             break;
           case 'session.error': {
+            const detail = [msg.code, msg.message, msg.param && ('param=' + msg.param)].filter(Boolean).join(' · ');
+            logEvent('down', msg.type, detail);
+            if (msg.code === 'agent_not_found' && !retriedAgentId) {
+              retriedAgentId = true;
+              reconnecting = true;
+              logEvent('up', 'retry', 'reconnect via /voice proxy');
+              try { socket.close(); } catch {}
+              ws = connectSocket();
+              reconnecting = false;
+              attach(ws, { agent_id: AGENT.id });
+              break;
+            }
             setStatus('error', msg.message || msg.code || 'Unknown error');
             break;
           }
