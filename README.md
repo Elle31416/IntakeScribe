@@ -3,7 +3,6 @@
 Your visit starts with your voice.
 
 A voice-first clinical intake prototype built with the AssemblyAI Voice Agent API.
-Created for the AssemblyAI hackathon on kalab.ai.
 Explore the repository (https://github.com/Elle31416/IntakeScribe) · Deployment guide (./RENDER_DEPLOY.md) · AssemblyAI (https://www.assemblyai.com/)
 -------------------------
 
