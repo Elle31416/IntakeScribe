@@ -1,215 +1,250 @@
-<img src="assemblyai.png" width="500"/>
+🎙️ IntakeScribe
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Elle31416/IntakeScribe)
-[![Voice Agent API](https://img.shields.io/badge/docs-Voice%20Agent%20API-2545E6)](https://www.assemblyai.com/docs/voice-agents/voice-agent-api)
+Your visit starts with your voice.
 
-> **Fork: IntakeScribe** - Clinical intake voice agent + Session History dashboard
-> - Agent: `AI Voice Intake Scribe` (agent_b0aca15004de4ab2b39bbfc1ce360956)
-> - Features: Live call + History API (list, transcript parsing, audio playback, timeline, tools, delete)
-> - Deploy: One-click Render button above, see [RENDER_DEPLOY.md](RENDER_DEPLOY.md)
+A voice-first clinical intake prototype built with the AssemblyAI Voice Agent API.
+Created for the AssemblyAI hackathon on kalab.ai.
+Explore the repository (https://github.com/Elle31416/IntakeScribe) · Deployment guide (./RENDER_DEPLOY.md) · AssemblyAI (https://www.assemblyai.com/)
+-------------------------
 
----
+Less paperwork. More room for your story.
 
-[![Voice Agent API](https://img.shields.io/badge/docs-Voice%20Agent%20API-2545E6)](https://www.assemblyai.com/docs/voice-agents/voice-agent-api)
-[![Node](https://img.shields.io/badge/node-%E2%89%A518-5FA04E?logo=node.js&logoColor=white)](https://nodejs.org)
-[![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)](package.json)
-[![AssemblyAI Twitter](https://img.shields.io/twitter/follow/AssemblyAI?label=%40AssemblyAI&style=social)](https://twitter.com/AssemblyAI)
-[![AssemblyAI YouTube](https://img.shields.io/youtube/channel/subscribers/UCtatfZMf-8EkIwASXM4ts0A)](https://www.youtube.com/@AssemblyAI)
+Before a medical appointment, patients are often asked to compress their concerns into forms. A conversation offers a different starting point: explaining what brings them in, in their own words.
+IntakeScribe brings that conversation into the browser.
+An AI voice intake agent conducts the conversation, while a session-history dashboard brings together the available transcript, recording, timeline, and tool activity for later review.
+> **Our goal is not to replace the clinician. It is to make the conversation before the visit easier to capture and revisit.**
 
-# AssemblyAI Voice Agent Starter for JS
+-------------------------
 
-Voice agents defined as JSON files. Publish one to your AssemblyAI account, then talk to it in a browser tab or by calling a phone number.
+✨ What it does
 
-Each file in [agents/](agents/) is the request body for `POST /v1/agents`. The starter sends it unchanged, saves the agent ID it gets back to `.env`, and both deployments connect using that ID. An agent you already have goes the other way, `npm run import <agent-id>` turns it into one of these files. Built on the [AssemblyAI Voice Agent API](https://www.assemblyai.com/products/voice-agent-api). Node 18 or later, no dependencies.
+1. Start a voice intake
 
-There is a [Python version of this repo](https://github.com/AssemblyAI/voice-agent-starter-python) with the same agents and the same steps.
+Connect to the configured AssemblyAI voice agent directly from a browser.
+2. Share your story
 
-## Quickstart
+Talk through the reason for your visit in a voice conversation rather than starting with a blank form.
+3. Revisit the session
 
-### 1. Clone
+Open session history to inspect the available transcript, listen to the recording, and explore session activity.
 
-```sh
-git clone https://github.com/AssemblyAI/voice-agent-starter-js
-cd voice-agent-starter-js
+Patient speaks
+      ↓
+AssemblyAI Voice Agent
+      ↓
+Intake conversation
+      ↓
+Session History
+ ├── Transcript
+ ├── Audio playback
+ ├── Timeline
+ └── Tool activity
+
+
+Artifact availability depends on the session and upstream processing.
+-------------------------
+
+🏆 Why this project stands out
+
+More than a voice demo
+
+The experience continues after the call. IntakeScribe connects a live interaction to a practical review workflow.
+Original words remain accessible
+
+Transcripts and available recordings let a reviewer return to what was actually said—not only an interpretation of it.
+AssemblyAI is central to the product
+
+The AssemblyAI Voice Agent API powers the conversation. It is not an incidental feature added to an otherwise unrelated application.
+A focused, extensible foundation
+
+The project builds on AssemblyAI’s JavaScript voice-agent starter, with JSON-defined agents and a lightweight Node.js runtime.
+A clear boundary around clinical responsibility
+
+IntakeScribe supports intake capture and review. It does not claim to diagnose, prescribe, or replace professional judgment.
+-------------------------
+
+🧩 Current capabilities
+
+| Capability | What it provides |
+|---|---|
+| **Browser voice calls** | Connect to the configured voice intake agent |
+| **Session history** | List and reopen previous sessions |
+| **Transcript parsing** | Present conversation content for review |
+| **Audio playback** | Listen to available session recordings |
+| **Session timeline** | Inspect available session events |
+| **Tool activity** | Review tool interactions exposed by the integration |
+| **Session deletion** | Invoke the existing session-delete operation |
+| **Render deployment** | Deploy using the repository’s documented setup |
+
+
+
+Configured agent: AI Voice Intake Scribe
+
+agent_b0aca15004de4ab2b39bbfc1ce360956
+
+
+The upstream starter also supports phone-number setup through Twilio. The primary hackathon experience is the browser-based intake and review workflow.
+-------------------------
+
+🎬 Judge walkthrough
+
+A short path through the product
+
+1. Open Live Call
+Start a browser session and allow microphone access.
+2. Use a fictional intake scenario
+For example:
+> “I’d like to talk about some knee soreness that started after a long walk.”
+
+Use synthetic details—not real patient information.
+3. Have a brief conversation
+Observe how the configured voice agent conducts the intake.
+4. End the call and open History
+Wait for the session and its artifacts to become available.
+5. Review the evidence
+Read the transcript, play available audio, and inspect the timeline or tool activity where present.
+What to evaluate
+
+- Does voice feel like a useful starting point for intake?
+- Is the resulting conversation easy to revisit?
+- Does the application make the AssemblyAI integration visible and understandable?
+- Are missing or processing artifacts represented honestly?
+-------------------------
+
+🏥 Demo experience: Riverdale Previsit
+
+Riverdale Previsit is the proposed fictional clinic identity for the frontend presentation.
+Suggested landing banner
+
+> ## Your visit starts with your voice.
+> Less paperwork. More room for your story.
+>
+> Talk through what brings you in, then revisit the conversation through transcripts and available recordings.
+>
+> **Start voice intake** · **Explore a sample session**
+
+The visual direction is calm and approachable: warm ivory, deep evergreen, clear typography, and a focused voice interface.
+Riverdale is a demo identity, not a claimed healthcare partnership. This branding is a presentation direction, not an additional backend capability.
+-------------------------
+
+⚙️ How it works
+
+
+┌─────────────────────────────────────────────┐
+│ Browser frontend                            │
+│ Live Call · History · Transcript · Playback  │
+└─────────────────────┬───────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│ Existing Node.js application                │
+│ Serves the UI · Mints session tokens         │
+│ Supports the existing history integration   │
+└─────────────────────┬───────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│ AssemblyAI Voice Agent API                  │
+│ Voice-agent sessions and available artifacts│
+└─────────────────────────────────────────────┘
+
+
+Technology
+
+- Runtime: Node.js 18 or later
+- Application foundation: AssemblyAI Voice Agent Starter for JavaScript
+- Agent definitions: JSON/JSONC
+- Voice platform: AssemblyAI Voice Agent API
+- Hosting: Render deployment configuration
+- Optional telephony: Twilio SIP integration inherited from the starter
+The AssemblyAI API key stays on the server. The browser connects using session credentials issued through the existing application.
+-------------------------
+
+🚀 Run locally
+
+Prerequisites
+
+- Node.js 18+
+- An AssemblyAI API key
+- An agent accessible to your AssemblyAI account
+1. Clone the repository
+
+
+git clone https://github.com/Elle31416/IntakeScribe.git
+cd IntakeScribe
 cp .env.example .env
-```
 
-### 2. Add your key
 
-From [assemblyai.com/dashboard/api-keys](https://www.assemblyai.com/dashboard/api-keys):
+2. Configure the environment
 
-```sh
-# .env
-ASSEMBLYAI_API_KEY=your_key_here
-```
 
-### 3. Get an agent
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key
+AGENT=ai-voice-intake-scribe
+AGENT_ID=your_accessible_agent_id
 
-Publish one of the examples:
 
-```sh
-npm run publish                       # agents/minimal.jsonc
-# AGENT=http-tools npm run publish    # or any other file in agents/
-```
+Use the configured project agent only if your account has access to it. Otherwise, publish the included intake-agent definition to your own account using the repository’s publishing workflow.
+3. Start the application
 
-Or import one you already have, shaped in the playground or the dashboard:
 
-```sh
-npm run import <agent-id>          # writes agents/<its-name>.jsonc
-```
-
-Either way you end up with the same pair: a file in `agents/` and its id in `.env` as `AGENT_ID_<NAME>`. Publishing again updates that agent rather than creating another, and each file keeps its own, so switching with `AGENT=` never overwrites the last one.
-
-### 4. Talk to it
-
-```sh
 npm start
-```
 
-Open http://localhost:3000 and start the call.
 
-### 5. Put it on a phone number
+Open:
 
-```sh
-# .env
-TWILIO_ACCOUNT_SID=AC...                          # console.twilio.com, top of the page
-TWILIO_AUTH_TOKEN=your_token_here                 # same place, hidden until you click it
-TWILIO_PHONE_NUMBER=+15551234567                  # a number already in your account, E.164
-TWILIO_TRUNK_DOMAIN=acme-agent.pstn.twilio.com    # a name you invent, must end .pstn.twilio.com
-```
+http://localhost:3000
 
-The trunk domain does not exist yet. You are naming the SIP trunk that gets created for you, and the name has to be unique across all of Twilio, so put something specific to you in front of `.pstn.twilio.com`. The phone number does have to exist already: buy one under Phone Numbers in the Twilio console first.
 
-```sh
-npm run phone
-```
+> Review the startup configuration before running: the starter can publish or update the selected agent when an explicit agent ID is not supplied.
 
-This creates the trunk, routes it to AssemblyAI, attaches your number to it, and binds the agent. Then call the number. Details in [deployment/telephony](deployment/telephony/).
+-------------------------
 
----
+☁️ Deploy on Render
 
-## Core examples
+Follow RENDER_DEPLOY.md (./RENDER_DEPLOY.md) for the repository-specific instructions.
+The documented intake configuration uses:
 
-Nine agent files. Four demonstrate a parameter, five demonstrate an integration.
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key
+AGENT=ai-voice-intake-scribe
+AGENT_ID=your_accessible_agent_id
 
-| `AGENT=` | Demonstrates | Requires |
-| --- | --- | --- |
-| [`minimal`](agents/minimal.jsonc) | the three required fields, and the defaults applied to the rest | |
-| [`keyterms`](agents/keyterms.jsonc) | biasing transcription toward names and jargon | |
-| [`turn-taking`](agents/turn-taking.jsonc) | silence thresholds and interruption handling | |
-| [`byo-llm`](agents/byo-llm.jsonc) | Claude through the AssemblyAI gateway, or your own endpoint | |
-| [`http-tools`](agents/http-tools.jsonc) | tools that AssemblyAI calls on the agent's behalf | |
-| [`exa-search`](agents/exa-search.jsonc) | web search during a call | `EXA_API_KEY` |
-| [`airtable-crm`](agents/airtable-crm.jsonc) | reading a caller record and writing one back | `AIRTABLE_*` |
-| [`cal-booking`](agents/cal-booking.jsonc) | checking availability, then booking a slot | `CAL_*` |
-| [`dtmf`](agents/dtmf.jsonc) | PCI compliance: card entry on the keypad, never in the transcript, the logs or the model | `DTMF_WEBHOOK_URL` |
 
-```sh
-AGENT=exa-search npm run publish
-npm start
-```
+Keep API keys in server-side environment settings. Never commit secrets or place them in frontend JavaScript.
+Public-demo warning: Anyone with the deployment URL can start billable sessions under the configured key. A frontend warning or hidden button is not access control.
+-------------------------
 
-To write your own, copy the closest file: `cp agents/http-tools.jsonc agents/my-agent.jsonc`. Every field is commented, with a link to the documentation page that defines it.
+🛡️ Responsible use
 
-## Importing an agent
+IntakeScribe is a hackathon prototype—not a production clinical system.
+- Use fictional patient information during demonstrations.
+- Do not use it for emergencies.
+- Do not treat agent responses as medical advice.
+- Do not rely on transcripts as error-free medical records.
+- Have an appropriately qualified person review information before clinical use.
+- Do not assume HIPAA compliance, clinical validation, or production-grade privacy controls.
+- Do not assume session deletion removes every upstream copy; deletion follows the existing API’s semantics.
+Real-world deployment would require appropriate security, access control, consent, retention policies, and clinical review beyond this prototype.
+-------------------------
 
-The playground is the quickest way to shape an agent. This is how it moves into code without being rebuilt by hand:
+🗺️ Frontend polish roadmap
 
-```sh
-npm run import 8f3c1e2a-...
-```
+The following are planned presentation improvements, not claims about already implemented features:
+- Riverdale Previsit landing experience.
+- Clearer microphone, connection, and call-ending states.
+- Responsive session-review workspace.
+- Transcript-to-audio seeking where timestamps support it.
+- Clearly labeled synthetic sample session.
+- Improved keyboard navigation and reduced-motion support.
+- More polished empty, loading, and error states.
+Scope: Preserve the existing backend, agent configuration, API contracts, and deployment behavior.
+-------------------------
 
-It writes `agents/<name>.jsonc`, the live agent as a file, headed with the id it came from. It records `AGENT_ID_<NAME>` in `.env`, so `npm run publish` sends a `PUT` to that same agent instead of creating a second one. It drops `id`, `created_at` and `updated_at`, which are not part of a create request. And it refuses to overwrite an existing file unless you pass `AGENT=<other-name>` or `OVERWRITE=1`.
+🙌 Acknowledgments
 
-Credentials are the one thing it cannot recover. Tool header values and `llm[].api_key` are write-only on the API, so they come back blank. The import names the ones to restore, and they belong in `.env`, referenced from the file as `${VARS}`:
+Built on the AssemblyAI Voice Agent Starter for JavaScript (https://github.com/AssemblyAI/voice-agent-starter-js).
+This fork extends that foundation into a clinical-intake prototype with a session-history and review experience.
+-------------------------
 
-```
-Header values are write-only and did not come back for: lookup.
-Put them in .env and reference them as ${VARS}.
-```
+A conversation worth revisiting.
 
-From there it behaves like any other file in `agents/`: edit it, publish, call.
-
-## Where it answers
-
-| | | |
-| --- | --- | --- |
-| [Browser](deployment/browser/) | `npm start` | Serves a page with a call button and mints session tokens. The API key stays on the server. |
-| [Phone](deployment/telephony/) | `npm run phone` | Configures a Twilio SIP trunk and attaches the agent to your number. |
-
-Twilio passes the call to AssemblyAI over SIP, so nothing in this repo sits in the audio path.
-
-## Hosting the browser app (IntakeScribe + History)
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Elle31416/IntakeScribe)
-
-**This fork includes Session History dashboard** - see [RENDER_DEPLOY.md](RENDER_DEPLOY.md) for full guide.
-
-Quick Render deploy for `Elle31416/IntakeScribe`:
-1. Click Deploy button above
-2. Set `ASSEMBLYAI_API_KEY` = your key from dashboard
-3. Set `AGENT=ai-voice-intake-scribe`, `AGENT_ID=agent_b0aca15004de4ab2b39bbfc1ce360956`
-4. Deploy → Live at `https://your-service.onrender.com` with Live Call + History tabs
-
-Original docs below still apply. Render reads [render.yaml](render.yaml) and prompts for exactly one value, `ASSEMBLYAI_API_KEY`, because that is the only variable marked `sync: false`. It sets `PORT` itself. The other two arrive with defaults you can change under Environment on the service:
-
-| Variable | Default | What it does |
-| --- | --- | --- |
-| `ASSEMBLYAI_API_KEY` | prompted | Stays on the server. Never sent to the page. |
-| `AGENT` | `minimal` | Which `agents/<name>.jsonc` the service publishes when it boots. |
-| `AGENT_ID` | empty | Paste an id from your `.env` to serve that exact agent, whichever file it came from. |
-
-Leaving `AGENT_ID` empty is fine. The service publishes `AGENT` on boot, and on later restarts it updates the agent of that name rather than creating another one. Setting it is still better, since the deployment then uses the same agent you tested locally and your phone number answers with.
-
-Anyone with the URL can start sessions billed to that key.
-
-## How it works
-
-```
-  copy an example                     npm run import <id>
-  or write your own                   an agent you already have
-           │                                   │
-           ▼                                   ▼
-agents/exa-search.jsonc     body of POST /v1/agents
-        + .env              the ${VARS} it references
-           │
-           ▼  npm run publish
-      AGENT_ID_EXA_SEARCH
-           ├──  npm start        browser tab
-           └──  npm run phone    phone number
-```
-
-The first publish sends `POST /v1/agents` and stores the returned ID in `.env` under a key of its own, `AGENT_ID_EXA_SEARCH` for that file. Later publishes send `PUT /v1/agents/{id}`, so the browser tab and the phone number both pick up the change on the next call, and publishing a different file leaves this one alone. A bare `AGENT_ID` overrides every per-file key.
-
-Values written as `${VAR}` anywhere in an agent file are substituted at publish time from `.env`, or from `agents/<name>.env` for credentials only one agent uses. Both files are gitignored, so the JSON can be committed.
-
-## Build with AI coding agents
-
-This repo includes [AGENTS.md](AGENTS.md), which Claude Code, Cursor and Copilot read for its conventions. The Voice Agent API changes, so point coding tools at the current documentation rather than letting them work from memory:
-
-> Always fetch https://assemblyai.com/docs/llms.txt before writing AssemblyAI code. The API has changed, do not rely on memorized parameter names.
-
-```sh
-claude mcp add --transport http --scope user assemblyai-docs https://mcp.assemblyai.com/docs
-npx skills add AssemblyAI/assemblyai-skill --global
-```
-
-See [Build with AI tools](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/build-with-ai-tools) and [Coding agent prompts](https://www.assemblyai.com/docs/coding-agent-prompts).
-
-## Voice Agent API
-
-Product: [Voice Agent API](https://www.assemblyai.com/products/voice-agent-api) · [Pricing](https://www.assemblyai.com/pricing) · [Dashboard](https://www.assemblyai.com/dashboard)
-
-Start here: [Documentation](https://www.assemblyai.com/docs/voice-agents/voice-agent-api) · [Create an agent](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/create-agent) · [Manage agents](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/manage-agents) · [Prompting guide](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/prompting-guide) · [Best practices](https://www.assemblyai.com/docs/voice-agents/best-practices)
-
-Configuration: [Voices](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/voices) · [Greeting](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/greeting) · [Turn detection](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/turn-detection-and-interruptions) · [Keyterms](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/transcription-prompt) · [Languages](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/supported-languages) · [Noise suppression](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/noise-suppression) · [Custom LLM](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/connect-your-own-llm)
-
-Tools: [Overview](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/tools/overview) · [HTTP tools](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/tools/http-tools) · [Client-side tools](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/tools/client-side-tools)
-
-Deployment: [Deploy](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/deploy) · [Browser integration](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/browser-integration) · [Connect to Twilio](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/connect-to-twilio) · [Use your own number](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/twilio-own-number) · [Webhooks](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/webhooks)
-
-Reference: [Session configuration](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/session-configuration) · [Events](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/events-reference) · [Message sequence](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/message-sequence) · [Session history](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/session-history) · [Troubleshooting](https://www.assemblyai.com/docs/voice-agents/voice-agent-api/troubleshooting)
-
-## Cost
-
-Sessions are billed to the API key that published the agent. Anyone with the deployed URL or the phone number can start a session on that key.
+IntakeScribe brings voice intake and session review together—so the story does not disappear when the call ends.
