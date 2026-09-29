@@ -14,8 +14,10 @@ services:
       - key: AGENT
         value: riverbend-agent
       # Serve this exact stored agent (Riverbend pre-visit intake).
+      # Replace with the AGENT_ID printed by `npm run publish`, or omit this
+      # var entirely to let the service publish agents/<AGENT>.jsonc on boot.
       - key: AGENT_ID
-        value: agent_bb11db37a70b4df0b3ab459560249842
+        sync: false
       # Optional: pin API base if your account is regional
       # - key: AGENTS_API_BASE
       #   value: https://agents.assemblyai.com/v1
