@@ -192,9 +192,7 @@ IntakeScribe is a **hackathon prototype, not a production clinical system.**
 
 Submitted to the [AssemblyAI Voice Agent Hackathon](https://lablab.ai/ai-hackathons/assemblyai-voice-agent-hackathon) run by lablab.ai and AssemblyAI (September 2026).
 
-## Credits
 
-IntakeScribe is a fork of the [AssemblyAI Voice Agent Starter for JS](https://github.com/AssemblyAI/voice-agent-starter-js). It keeps the starter's publish, import and telephony tooling and adds the clinical intake agent, the Session History dashboard and the Render deployment guide.
 
 <p align="center">
   <sub>Powered by the AssemblyAI Voice Agent API</sub>
