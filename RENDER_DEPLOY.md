@@ -15,13 +15,18 @@ This repo now includes a full Session History dashboard built from https://www.a
 
 ## Deploy to Render (Blueprint)
 
+> **Note:** `render.yaml` is gitignored because it pins a real, account-specific
+> `AGENT_ID`. Copy [`render.yaml.example`](render.yaml.example) to `render.yaml`
+> and fill in your own `AGENT_ID` (or drop that var to let the service publish
+> `agents/<AGENT>.jsonc` on boot) before deploying.
+
 ### Option 1: One-click Deploy
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AssemblyAI/voice-agent-starter-js)
 
 1. Click Deploy to Render
 2. Render reads `render.yaml` and prompts for:
-   - `ASSEMBLYAI_API_KEY` = `94952aaa38db4dda8313417937ab24c8` (or your production key from https://www.assemblyai.com/dashboard/api-keys)
+   - `ASSEMBLYAI_API_KEY` = your production key from https://www.assemblyai.com/dashboard/api-keys
 3. Set:
    - `AGENT` = `ai-voice-intake-scribe`
    - `AGENT_ID` = `agent_b0aca15004de4ab2b39bbfc1ce360956` (optional but recommended for prod - ensures phone + browser use same agent)

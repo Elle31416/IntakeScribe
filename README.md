@@ -124,7 +124,7 @@ Open <http://localhost:3000>.
 
 ### Deploy to Render
 
-1. Click **Deploy to Render** above. Render reads [`render.yaml`](render.yaml).
+1. Click **Deploy to Render** above. Render reads `render.yaml` — copy [`render.yaml.example`](render.yaml.example) to `render.yaml` first and set your own `AGENT_ID` (it's gitignored since it's account-specific).
 2. Set `ASSEMBLYAI_API_KEY` to your key (it is marked as a secret and stays on the server).
 3. Set `AGENT=ai-voice-intake-scribe`.
 4. Deploy, then open `https://your-service.onrender.com`.
@@ -185,7 +185,7 @@ IntakeScribe is a **hackathon prototype, not a production clinical system.**
 | [`deployment/browser/`](deployment/browser/) | Node server, Live Call page and History dashboard (`server.mjs`) |
 | [`deployment/telephony/`](deployment/telephony/) | Twilio SIP trunk setup |
 | [`publish.mjs`](publish.mjs) · [`import.mjs`](import.mjs) · [`lib.mjs`](lib.mjs) | Publish an agent file to AssemblyAI, or import an existing agent as a file |
-| [`render.yaml`](render.yaml) · [`RENDER_DEPLOY.md`](RENDER_DEPLOY.md) | One-click Render blueprint and guide |
+| [`render.yaml.example`](render.yaml.example) · [`RENDER_DEPLOY.md`](RENDER_DEPLOY.md) | One-click Render blueprint template and guide (copy to `render.yaml`, gitignored) |
 | [`AGENTS.md`](AGENTS.md) · [`CLAUDE.md`](CLAUDE.md) | Conventions for AI coding tools |
 
 ## Built for the AssemblyAI Voice Agent Hackathon
